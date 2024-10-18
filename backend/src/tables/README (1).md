@@ -78,7 +78,7 @@ Once the schema has been uploaded, you can verify the tables in your Xata worksp
 After you’ve uploaded your schema, run the following command to generate the client code:
 
    ```bash
-   npm install
+   xata codegen
    ```
 
 This will generate the necessary code (e.g., xata.ts) in your project directory. 
