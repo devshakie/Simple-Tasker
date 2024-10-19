@@ -96,3 +96,50 @@ html, body {
   object-fit: cover;
   border-radius: 0 8px 8px 0;
 }
+
+.navbar {
+  position: sticky; 
+  top: 0;
+  z-index: 1000; 
+  width: 100vw; 
+  background-color: #4CAF50; 
+  padding: 4px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  
+}
+
+.navbar-brand .navbar-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-logo:hover {
+  color: #fff5ee;
+  transition: color 0.3s ease;
+}
+
+/* Navbar Links Styling */
+.navbar-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.navbar-links li a {
+  color: white;
+  font-size: 1rem;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-links li a:hover {
+  background-color: #fff5ee;
+  color: #4CAF50;
+}
+
