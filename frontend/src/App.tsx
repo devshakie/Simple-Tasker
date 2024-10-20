@@ -4,6 +4,7 @@ import Signup from "./components/users/signup";
 import Navbar from "./components/users/navbar";
 import Dashboard from "./pages/dashboard";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import TaskBoard from "./pages/taskBoard";
 
 function Layout() {
   
@@ -22,7 +23,8 @@ function Layout() {
             <Route path="/" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/navbar" element={<Navbar />} />
-            <Route path="/dashboard" element={<Dashboard/>} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/taskboard" element={<TaskBoard />} /> 
           </Routes>
         
       </div>

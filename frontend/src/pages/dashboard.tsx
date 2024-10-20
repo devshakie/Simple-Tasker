@@ -11,6 +11,8 @@ interface Team {
 const Dashboard = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [newTeamName, setNewTeamName] = useState<string>(""); // State for the new team name
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Modal visibility state
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -29,7 +31,30 @@ const Dashboard = () => {
     setSelectedTeam(team);
   };
 
-    return (
+  // Function to handle form submission inside the modal
+  const handleCreateTeam = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Prevent default form submission
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.post('http://localhost:5000/teams', {
+        name: newTeamName,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Update the teams list with the newly created team
+      setTeams([...teams, response.data]);
+      setNewTeamName(''); // Clear the input after submission
+      setIsModalOpen(false); // Close the modal after submission
+    } catch (error) {
+      console.error("Error creating team", error);
+    }
+  };
+
+  return (
     <div className="dashboard">
       <aside className="sidebar">
         <h3>Profile</h3>
@@ -40,7 +65,13 @@ const Dashboard = () => {
             </li>
           ))}
         </ul>
+
+        {/* Clickable "Create a Team" link */}
+        <p className="create-team-link" onClick={() => setIsModalOpen(true)}>
+          + Create a new team
+        </p>
       </aside>
+
       <main className="main-content">
         <h2>Your Teams</h2>
         <ul>
@@ -51,6 +82,7 @@ const Dashboard = () => {
           ))}
         </ul>
       </main>
+
       <section className="project-details">
         {selectedTeam ? (
           <div>
@@ -65,6 +97,26 @@ const Dashboard = () => {
           <p>Select a team to see projects.</p>
         )}
       </section>
+
+      {/* Modal for creating a new team */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h4>Create a new team</h4>
+            <form onSubmit={handleCreateTeam}>
+              <input
+                type="text"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="Enter team name"
+                required
+              />
+              <button type="submit">Create Team</button>
+            </form>
+            <button className="close-modal" onClick={() => setIsModalOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
