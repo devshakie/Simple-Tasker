@@ -14,7 +14,8 @@
       "columns": [
         { "name": "name", "type": "string" },
         { "name": "description", "type": "text" },
-        { "name": "adminId", "type": "link", "link": { "table": "User" } }
+        { "name": "adminId", "type": "link", "link": { "table": "User" } },
+        { "name": "members", "type": "multiple", "link": { "table": "User" } }
       ]
     },
     {
