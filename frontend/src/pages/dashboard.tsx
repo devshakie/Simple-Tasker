@@ -95,7 +95,7 @@ const Dashboard = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:8000/api/projects/teams/${team.id}`, {
+      const response = await fetch(`http://localhost:8000/api/project/${team.id}/projects`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@ const Dashboard = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:8000/api/teams/${teamId}/projects`, {
+      const response = await fetch(`http://localhost:8000/api/project/${teamId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
