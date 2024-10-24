@@ -20,7 +20,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Join a team
-export const joinTeam = async (req: Request, res: Response): Promise<Response | void> => {
+export const joinTeam = async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.id; // Use non-null assertion since authMiddleware guarantees `user` exists
   const { teamId } = req.body;
 
@@ -29,14 +29,14 @@ export const joinTeam = async (req: Request, res: Response): Promise<Response | 
     const team = await xata.db.Team.read(teamId);
     
     if (!team) {
-      return res.status(404).json({ message: "Team not found" });
+    res.status(404).json({ message: "Team not found" });
     }
 
     const castedTeam = team as unknown as Team; // Safe type casting after checking
 
     // Check if user is already a member
     if (castedTeam.members.includes(userId)) {
-      return res.status(400).json({ message: "You are already a member of this team" });
+      res.status(400).json({ message: "You are already a member of this team" });
     }
 
     // Add user to the team's members array
@@ -44,24 +44,44 @@ export const joinTeam = async (req: Request, res: Response): Promise<Response | 
       members: [...castedTeam.members, userId],
     });
 
-    return res.json({ message: "Successfully joined the team" });
+    res.json({ message: "Successfully joined the team" });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "Server error" });
+  res.status(500).json({ message: "Server error" });
   }
 };
 
 // Create a new team
-export const createTeam = async (req: Request, res: Response): Promise<Response | void> => {
+export const createTeam = async (req: Request, res: Response): Promise<void> => {
   const { name, description } = req.body;
   const adminId = req.user!.id; // Use non-null assertion
 
   try {
     // Create a new team record in the database
     const team = await xata.db.Team.create({ name, description, adminId });
-    return res.status(201).json(team); // Return the created team
+    res.status(201).json(team); // Return the created team
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all teams
+export const getAllTeams = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fetch all teams from the database
+    const teams = await xata.db.Team.getAll();
+
+    // Check if teams exist
+    if (!teams || teams.length === 0) {
+      res.status(404).json({ message: "No teams found" });
+      return;
+    }
+
+    // Return the teams
+    res.status(200).json(teams);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };

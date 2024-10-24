@@ -17,7 +17,7 @@ html, body {
 
 .login-form, .signup-form {
   flex: 1;
-  padding: 40px;
+  padding:  30px;
   max-width: 600px;
   display: flex;
   flex-direction: column;
@@ -33,14 +33,14 @@ html, body {
 }
 
 .login-form h4, .signup-form h4 {
-  margin-bottom: 20px;
+  margin-bottom: 0;
   color: #555;
 }
 
 .login-form input, .signup-form input {
   width: 100%;
   padding: 10px;
-  margin: 10px 0;
+  margin: 1px 0;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
@@ -75,7 +75,7 @@ html, body {
 
 .signup, .login {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 2px;
   color: #555;
 }
 
@@ -142,4 +142,9 @@ html, body {
   background-color: #fff5ee;
   color: #4CAF50;
 }
-
+.success-message{
+  color: #333;
+}
+.error-message{
+  color:#333
+}

@@ -43,7 +43,7 @@ export const register = async (
       expiresIn: "1h",
     });
 
-    res.status(201).json({ token });
+    res.status(201).send({ token });
   } catch (err) {
     next(err); // Pass the error to the error handler
   }
