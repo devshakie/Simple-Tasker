@@ -9,7 +9,7 @@ export const createTask = async (req: Request, res: Response) => {
   try {
     const project = await xata.db.Project.read(projectId);
     if (!project) {
-      res.status(404).json({ message: "Project not found" });
+      return res.status(404).json({ message: "Project not found" }); // Added return
     }
 
     const task = await xata.db.Task.create({
@@ -22,6 +22,7 @@ export const createTask = async (req: Request, res: Response) => {
 
     res.status(201).json(task);
   } catch (err) {
+    console.error("Error creating task:", err); // Log error
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -38,12 +39,14 @@ export const updateTask = async (req: Request, res: Response) => {
       dueDate,
       assignedToId,
     });
+    
     if (!task) {
-      res.status(404).json({ message: "Task not found" });
+      return res.status(404).json({ message: "Task not found" }); // Added return
     }
 
     res.json(task);
   } catch (err) {
+    console.error("Error updating task:", err); // Log error
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -56,7 +59,7 @@ export const addComment = async (req: Request, res: Response) => {
   try {
     const task = await xata.db.Task.read(taskId);
     if (!task) {
-      res.status(404).json({ message: "Task not found" });
+      return res.status(404).json({ message: "Task not found" }); // Added return
     }
 
     const comment = await xata.db.Comment.create({
@@ -67,6 +70,7 @@ export const addComment = async (req: Request, res: Response) => {
 
     res.status(201).json(comment);
   } catch (err) {
+    console.error("Error adding comment:", err); // Log error
     res.status(500).json({ message: "Server error" });
   }
 };

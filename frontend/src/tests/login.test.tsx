@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom'; // To mock routing context
-import Signup from './signup';
+import { MemoryRouter } from 'react-router-dom'; // Mock routing context
+import Login from './login';
 
 // Mock the navigate function from react-router-dom
 const mockedNavigate = jest.fn();
@@ -9,65 +9,57 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockedNavigate,
 }));
 
-describe('Signup Component', () => {
+describe('Login Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks(); // Clear any previous mocks before each test
+    jest.clearAllMocks(); // Clear mocks before each test
   });
 
-  test('renders the signup form correctly', () => {
+  test('renders the login form correctly', () => {
     render(
       <MemoryRouter>
-        <Signup />
+        <Login />
       </MemoryRouter>
     );
 
     // Check if the form elements are rendered
-    expect(screen.getByLabelText(/Name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Role/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Sign Up/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Login/i })).toBeInTheDocument();
   });
 
-  test('displays error message on failed signup', async () => {
+  test('displays error message on failed login', async () => {
     // Mock the fetch API to return a failed response
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
-        statusText: 'Internal Server Error',
+        statusText: 'Unauthorized',
       } as Response)
     );
 
     render(
       <MemoryRouter>
-        <Signup />
+        <Login />
       </MemoryRouter>
     );
 
     // Fill out the form fields
-    fireEvent.change(screen.getByLabelText(/Name/i), {
-      target: { value: 'Test User' },
-    });
     fireEvent.change(screen.getByLabelText(/Email address/i), {
       target: { value: 'test@example.com' },
     });
     fireEvent.change(screen.getByLabelText(/Password/i), {
-      target: { value: 'password123' },
-    });
-    fireEvent.change(screen.getByLabelText(/Role/i), {
-      target: { value: 'admin' },
+      target: { value: 'wrongpassword' },
     });
 
     // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Login/i }));
 
     // Wait for the async error message to appear
     await waitFor(() =>
-      expect(screen.getByText(/Signup failed. Please try again/i)).toBeInTheDocument()
+      expect(screen.getByText(/Login failed. Please try again/i)).toBeInTheDocument()
     );
   });
 
-  test('displays success message and redirects on successful signup', async () => {
+  test('displays success message and redirects on successful login', async () => {
     // Mock the fetch API to return a successful response
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -78,30 +70,26 @@ describe('Signup Component', () => {
 
     render(
       <MemoryRouter>
-        <Signup />
+        <Login />
       </MemoryRouter>
     );
 
     // Fill out the form fields
-    fireEvent.change(screen.getByLabelText(/Name/i), {
-      target: { value: 'Test User' },
-    });
     fireEvent.change(screen.getByLabelText(/Email address/i), {
       target: { value: 'test@example.com' },
     });
     fireEvent.change(screen.getByLabelText(/Password/i), {
-      target: { value: 'password123' },
-    });
-    fireEvent.change(screen.getByLabelText(/Role/i), {
-      target: { value: 'admin' },
+      target: { value: 'correctpassword' },
     });
 
     // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Login/i }));
 
     // Wait for the success message to appear
     await waitFor(() =>
-      expect(screen.getByText(/Signup successful! Redirecting to dashboard/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Login successful! Redirecting to dashboard/i)
+      ).toBeInTheDocument()
     );
 
     // Verify that the navigate function is called
