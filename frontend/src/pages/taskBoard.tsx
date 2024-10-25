@@ -1,314 +1,157 @@
-import { useEffect, useState } from "react";
-import "./Dashboard.css";
+import React, { useState } from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { useSensor, useSensors, MouseSensor, KeyboardSensor } from '@dnd-kit/core';
+import { SortableContext, useSortable, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import './TaskBoard.css';
 
-interface Team {
+interface Task {
   id: string;
   name: string;
-  description: string;
-  adminId: string;
-  members: string[];
-  projects: { id: string; name: string }[];
+  status: 'todo' | 'inProgress' | 'done';
+  comments: string[];
 }
 
-interface User {
-  id: string;
-  name: string;
-}
+const initialTasks: Task[] = [
+  { id: '1', name: 'Design homepage', status: 'todo', comments: [] },
+  { id: '2', name: 'Set up database', status: 'inProgress', comments: ["This needs attention."] },
+  { id: '3', name: 'Create API endpoints', status: 'inProgress', comments: [] },
+  { id: '4', name: 'Write documentation', status: 'done', comments: ["Documentation is almost finished."] },
+];
 
-const Dashboard = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [newTeamName, setNewTeamName] = useState<string>("");
-  const [newDescription, setNewDescription] = useState<string>("");
-  const [newAdminId, setNewAdminId] = useState<string>("");
-  const [newMembers, setNewMembers] = useState<string[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+const TaskBoard = () => {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [newComment, setNewComment] = useState<string>('');
+  const [editedTaskName, setEditedTaskName] = useState<string>('');
 
-  useEffect(() => {
-    const fetchTeams = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
-      try {
-        const response = await fetch("http://localhost:8000/api/teams", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
-        }
+    const draggedTaskId = active.id;
+    const newStatus = over.id as Task['status']; // Get the column ID (which is also the status)
 
-        const data = await response.json();
-        setTeams(data);
-      } catch (error) {
-        console.error("Error fetching teams:", error);
-      }
-    };
-
-    const fetchUsers = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
-
-      try {
-        const response = await fetch("http://localhost:8000/api/users", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-
-    fetchTeams();
-    fetchUsers();
-  }, []);
-
-  // Fetch projects for the selected team when "View" is clicked
-  const handleViewProjects = async (team: Team) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await fetch(`http://localhost:8000/api/projects/team/${team.id}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
-      const projects = await response.json();
-      setSelectedTeam({ ...team, projects });
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === draggedTaskId ? { ...task, status: newStatus } : task
+      )
+    );
   };
 
-  // Function to handle form submission for creating a new team
-  const handleCreateTeam = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await fetch("http://localhost:8000/api/teams", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newTeamName,
-          description: newDescription,
-          adminId: newAdminId,
-          members: newMembers,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
-      const newTeam = await response.json();
-      setTeams((prevTeams) => [...prevTeams, newTeam]);
-
-      // Clear the form input and close the modal
-      setNewTeamName("");
-      setNewDescription("");
-      setNewAdminId("");
-      setNewMembers([]);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error creating team:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setEditedTaskName(task.name);
   };
 
-  // Function to handle creating a new project
-  const handleCreateProject = async (teamId: string) => {
-    const projectName = prompt("Enter the project name:");
-    if (!projectName) return;
+  const handleTaskEdit = () => {
+    setEditing(true);
+  };
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
+  const handleTaskNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTaskName(event.target.value);
+  };
 
-    try {
-      setIsLoading(true);
-      const response = await fetch(`http://localhost:8000/api/teams/${teamId}/projects`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name: projectName }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
-      const newProject = await response.json();
-      setTeams((prevTeams) =>
-        prevTeams.map((team) =>
-          team.id === teamId ? { ...team, projects: [...team.projects, newProject] } : team
+  const handleSaveTaskName = () => {
+    if (selectedTask) {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === selectedTask.id ? { ...task, name: editedTaskName } : task
         )
       );
+      setEditing(false);
+    }
+  };
 
-      // Update the selected team with the new project
-      if (selectedTeam && selectedTeam.id === teamId) {
-        setSelectedTeam((prevSelectedTeam) =>
-          prevSelectedTeam
-            ? { ...prevSelectedTeam, projects: [...prevSelectedTeam.projects, newProject] }
-            : prevSelectedTeam
-        );
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
-    } finally {
-      setIsLoading(false);
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedTask && newComment.trim()) {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === selectedTask.id
+            ? { ...task, comments: [...task.comments, newComment] }
+            : task
+        )
+      );
+      setNewComment('');
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedTask(null);
+    setEditing(false);
+    setEditedTaskName('');
+  };
+
+  const handleDeleteTask = () => {
+    if (selectedTask) {
+      setTasks((prevTasks) => prevTasks.filter(task => task.id !== selectedTask.id));
+      closeModal();
     }
   };
 
   return (
-    <div className="dashboard">
-      <aside className="sidebar">
-        <h3>Profile</h3>
+    <div className="task-board">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="kanban-columns">
+          <DroppableColumn title="To Do" id="todo" tasks={tasks.filter(task => task.status === 'todo')} onTaskClick={handleTaskClick} />
+          <DroppableColumn title="In Progress" id="inProgress" tasks={tasks.filter(task => task.status === 'inProgress')} onTaskClick={handleTaskClick} />
+          <DroppableColumn title="Done" id="done" tasks={tasks.filter(task => task.status === 'done')} onTaskClick={handleTaskClick} />
+        </div>
+      </DndContext>
 
-        <p className="create-team-link" onClick={() => setIsModalOpen(true)}>
-          + Create a new team
-        </p>
-      </aside>
+      {/* Task Modal */}
+      {selectedTask && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h4>Task Details</h4>
+            <span className="close-modal" onClick={closeModal}>✖</span>
 
-      <main className="main-content">
-        <h2>Your Teams</h2>
-        <ul className="team-list">
-          {teams.map((team) => (
-            <li key={team.id} className="team-item">
-              <span className="team-name">{team.name}</span>
-              <span className="team-description">{team.description}</span>
-              <button
-                className="view-projects-btn"
-                onClick={() => handleViewProjects(team)}
-              >
-                View Projects
-              </button>
-              <button className="create-project-btn" onClick={() => handleCreateProject(team.id)}>
-                Create New Project
-              </button>
-            </li>
-          ))}
-        </ul>
-      </main>
+            {!editing ? (
+              <h2 onClick={handleTaskEdit} className="task-title">
+                {selectedTask.name}
+              </h2>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={editedTaskName}
+                  onChange={handleTaskNameChange}
+                  className="task-input"
+                  autoFocus
+                />
+                <button onClick={handleSaveTaskName} className='edited-save-btn'>Save</button>
+              </>
+            )}
 
-      <section className="project-details">
-        {selectedTeam && selectedTeam.projects ? (
-          <div>
-            <h3>Projects for {selectedTeam.name}</h3>
-            <ul className="project-list">
-              {selectedTeam.projects.map((project) => (
-                <li key={project.id} className="project-item">
-                  <div className="project-header">
-                    <h4 className="project-name">{project.name}</h4>
-                  </div>
-                
+            <ul className="comment-list">
+              {selectedTask.comments.map((comment, index) => (
+                <li key={index}>
+                  {comment}
                 </li>
               ))}
             </ul>
-          </div>
-        ) : (
-          <p>Select a team to see projects.</p>
-        )}
-      </section>
 
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h4>Create a new team</h4>
-            <span
-              className="close-modal"
-              onClick={() => setIsModalOpen(false)}
-              style={{
-                cursor: "pointer",
-                fontSize: "24px",
-                position: "absolute",
-                right: "10px",
-                top: "10px",
-              }}
-            >
-              &times;
-            </span>
-            <form onSubmit={handleCreateTeam}>
-              {/* Team Name */}
+            {/* Add Comment */}
+            <form onSubmit={handleAddComment}>
               <input
                 type="text"
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                placeholder="Enter team name"
-                required
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment"
+                className="comment-input"
               />
-
-              {/* Description */}
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Enter team description"
-                required
-              />
-
-              {/* Admin ID */}
-              <input
-                type="text"
-                value={newAdminId}
-                onChange={(e) => setNewAdminId(e.target.value)}
-                placeholder="Enter admin ID"
-                required
-              />
-
-              {/* Submit Button */}
-              <button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Team"}
-              </button>
+              <button type="submit" className="add-comment-btn">Add</button>
             </form>
+
+            {/* Delete Task */}
+            <button onClick={handleDeleteTask} className="delete-task-btn">Delete Task</button>
           </div>
         </div>
       )}
@@ -316,4 +159,45 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+interface ColumnProps {
+  title: string;
+  id: string;
+  tasks: Task[];
+  onTaskClick: (task: Task) => void;
+}
+
+const DroppableColumn = ({ title, id, tasks, onTaskClick }: ColumnProps) => (
+  <div className="kanban-column" id={id}>
+    <h3>{title}</h3>
+    <SortableContext items={tasks.map(task => task.id)}>
+      <ul className="task-list">
+        {tasks.map((task) => (
+          <TaskCard key={task.id} task={task} onTaskClick={onTaskClick} />
+        ))}
+      </ul>
+    </SortableContext>
+  </div>
+);
+
+interface TaskCardProps {
+  task: Task;
+  onTaskClick: (task: Task) => void;
+}
+
+const TaskCard = ({ task, onTaskClick }: TaskCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners} className="task-card" onClick={() => onTaskClick(task)}>
+      {task.name}
+      {task.comments.length > 0 && <span className="comment-icon">💬</span>}
+    </li>
+  );
+};
+
+export default TaskBoard;
